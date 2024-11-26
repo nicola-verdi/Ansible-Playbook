@@ -1,0 +1,7 @@
+min_free_space_byte: 1000000
+check_mode: true
+service_to_manage:
+  - httpd
+mountpoints:
+  - '/'
+  - '/boot'

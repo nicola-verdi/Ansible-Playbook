@@ -1,0 +1,175 @@
+- name: test di integrazione con vmware
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    vcenter_hostname: "{{ lookup('ansible.builtin.env', 'VMWARE_HOST', default=Undefined )  }}"
+    vcenter_username: "{{ lookup('ansible.builtin.env', 'VMWARE_USER', default=Undefined )  }}"
+    vcenter_password: "{{ lookup('ansible.builtin.env', 'VMWARE_PASSWORD', default=Undefined )  }}"
+
+  tasks:
+    - name: Include vars 
+      ansible.builtin.include_vars:
+        file: vars.yaml
+
+    - name: Gather all registered virtual machines
+      community.vmware.vmware_vm_info:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: false
+        vm_type: vm
+      delegate_to: localhost
+      register: vm_info
+
+    - name: registro l'output nel fact del localhost in modo da non ripeterlo per ogni VM
+      ansible.builtin.set_fact:
+        vm_info: "{{ vm_info.virtual_machines }}"
+
+
+- name: Esempio di playbook per il patching di sicurezza
+  hosts: all
+  gather_facts: true
+  serial: 1
+
+  vars:
+    vcenter_hostname: "{{ lookup('ansible.builtin.env', 'VMWARE_HOST', default=Undefined )  }}"
+    vcenter_username: "{{ lookup('ansible.builtin.env', 'VMWARE_USER', default=Undefined )  }}"
+    vcenter_password: "{{ lookup('ansible.builtin.env', 'VMWARE_PASSWORD', default=Undefined )  }}"
+
+
+
+  tasks:
+    - name: Include vars 
+      ansible.builtin.include_vars:
+        file: vars.yaml
+
+    - name: Print only disk related Facts
+      ansible.builtin.debug:
+        var: ansible_facts.mounts
+        verbosity: 1
+
+    - name: Print Facts
+      ansible.builtin.debug:
+        var: ansible_facts
+        verbosity: 2
+
+    - name: Verify disk space 
+      when: item.mount in mountpoints
+      ansible.builtin.assert:
+        that: 
+         -   item.size_available >  min_free_space_byte 
+        fail_msg: "the partition {{ item.mount }} don't have enough free space" 
+      loop: "{{ ansible_facts.mounts }}"
+
+    - name: check_mode attivato 
+      when: check_mode == true
+      block:
+      - name: Apply security Fix
+        ansible.builtin.yum:
+          name: '*'
+          state: latest
+          security: true
+        check_mode: "{{ check_mode }}"  
+        register: package_to_be_updated
+        become: true
+
+      - name: Print Updated package list
+        ansible.builtin.debug:
+          var: package_to_be_updated
+
+    - name: Patch really
+      when: check_mode == false
+      block:
+      - name: Estraggo il UUID della VM
+        ansible.builtin.set_fact:
+          vm_data: "{{ hostvars['localhost']['vm_info'] | selectattr('ip_address', '==' , ansible_facts.default_ipv4.address  )}}"
+
+      - name: debug
+        ansible.builtin.debug:
+          var: vm_data
+          verbosity: 1
+
+
+      - name: Verifico se sono presenti degli snapshot
+        community.vmware.vmware_guest_snapshot_info:
+          hostname: "{{ vcenter_hostname }}"
+          username: "{{ vcenter_username }}"
+          password: "{{ vcenter_password }}"
+          datacenter: "{{ vm_data[0].datacenter }}"
+          use_instance_uuid: true
+          uuid: "{{ vm_data[0].instance_uuid }}"
+          validate_certs: false
+        delegate_to: localhost
+        register: snapshot_info 
+
+      - name: debug
+        ansible.builtin.debug:
+          var: snapshot_info
+          verbosity: 1
+
+      - name: Fallisco se sono già presenti degli snapshot
+        ansible.builtin.assert:
+          that:
+            - snapshot_info.guest_snapshots == {}
+          fail_msg: "It's present at least a  snapshot of the machine {{ ansible_facts.hostname }} , please check why."
+
+
+      - name: Stop services
+        ansible.builtin.service:
+          name: "{{ item }}"
+          state: stopped
+        loop: "{{ service_to_manage }}"
+        become: true
+  
+      - name: Creo uno snapshot della VM
+        community.vmware.vmware_guest_snapshot:
+          validate_certs: false
+          hostname: "{{ vcenter_hostname }}"
+          username: "{{ vcenter_username }}"
+          password: "{{ vcenter_password }}"
+          datacenter: "{{ vm_data[0].datacenter }}"
+          use_instance_uuid: true
+          uuid: "{{ vm_data[0].instance_uuid }}"
+          memory_dump: false
+          quiesce: true 
+          snapshot_name: "{{ ansible_facts.hostname }}-prepatch"
+          description: "Pre-patching snapshot"
+          state: present 
+        delegate_to: localhost
+
+      - name: Apply security Fix
+        ansible.builtin.yum:
+          name: '*'
+          state: latest
+          security: true
+        become: true
+  
+      - name: Verifica presenza pacchetto yum-utils
+        ansible.builtin.yum:
+          name: 'yum-utils'
+          state: present
+        become: true
+
+      - name: Verifico se è necessario fare il reboot 
+        ansible.builtin.shell: needs-restarting -r
+        register: output
+        failed_when: false
+        become: true
+
+      - name: Reboot server se è stato aggiornato il kernek
+        when: output.rc != 0
+        ansible.builtin.reboot:
+          pre_reboot_delay: 15
+          post_reboot_delay: 60
+          reboot_timeout: 180
+        become: true
+  
+      - name: Se non è stato necessario fare il reboot avvio i servizi
+        when: output.rc == 0
+        ansible.builtin.service:
+          name: "{{ item }}"
+          state: started
+        loop: "{{ service_to_manage }}"
+        become: true
+  

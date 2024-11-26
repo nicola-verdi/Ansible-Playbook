@@ -1,0 +1,86 @@
+- name: Raccolgo le informazioni relative alle VM
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    vcenter_hostname: "{{ lookup('ansible.builtin.env', 'VMWARE_HOST', default=Undefined )  }}"
+    vcenter_username: "{{ lookup('ansible.builtin.env', 'VMWARE_USER', default=Undefined )  }}"
+    vcenter_password: "{{ lookup('ansible.builtin.env', 'VMWARE_PASSWORD', default=Undefined )  }}"
+
+
+  tasks:
+    - name: Include vars
+      ansible.builtin.include_vars:
+        file: vars.yaml
+
+    - name: Gather all registered virtual machines
+      community.vmware.vmware_vm_info:
+        hostname: '{{ vcenter_hostname }}'
+        username: '{{ vcenter_username }}'
+        password: '{{ vcenter_password }}'
+        validate_certs: false
+        vm_type: vm
+      delegate_to: localhost
+      register: vm_info
+
+    - name: registro l'output nel fact del localhost in modo da non ripeterlo per ogni VM
+      ansible.builtin.set_fact:
+        vm_info: "{{ vm_info.virtual_machines }}"
+
+
+- name: Elimino gli snapshot creati con il patching
+  hosts: all
+  gather_facts: true
+  serial: 1
+
+  vars:
+    vcenter_hostname: "{{ lookup('ansible.builtin.env', 'VMWARE_HOST', default=Undefined )  }}"
+    vcenter_username: "{{ lookup('ansible.builtin.env', 'VMWARE_USER', default=Undefined )  }}"
+    vcenter_password: "{{ lookup('ansible.builtin.env', 'VMWARE_PASSWORD', default=Undefined )  }}"
+
+  tasks:
+    - name: Include vars
+      ansible.builtin.include_vars:
+        file: vars.yaml
+
+    - name: Estraggo il UUID della VM
+      ansible.builtin.set_fact:
+        vm_data: "{{ hostvars['localhost']['vm_info'] | selectattr('ip_address', '==' , ansible_facts.default_ipv4.address  )}}"
+
+    - name: Verifico se sono presenti degli snapshot
+      community.vmware.vmware_guest_snapshot_info:
+        hostname: "{{ vcenter_hostname }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        datacenter: "{{ vm_data[0].datacenter }}"
+        use_instance_uuid: true
+        uuid: "{{ vm_data[0].instance_uuid }}"
+        validate_certs: false
+      delegate_to: localhost
+      register: snapshot_info
+
+    - name: debug
+      ansible.builtin.debug:
+          var: snapshot_info
+          verbosity: 1
+
+    - name: verifico che l'ultimo snapshot sia quello fatto pre-patchin
+      vars:
+        snapshot_name: "{{ ansible_facts.hostname }}-prepatch"
+      ansible.builtin.assert:
+          that:
+            - snapshot_info.guest_snapshots.current_snapshot.name ==  snapshot_name
+          fail_msg: "the last snapshotof the machine {{ ansible_facts.hostname }} is not the one done before patching, please check why."
+
+    - name: elimino lo snapshot pre-patching
+      community.vmware.vmware_guest_snapshot:
+          validate_certs: false
+          hostname: "{{ vcenter_hostname }}"
+          username: "{{ vcenter_username }}"
+          password: "{{ vcenter_password }}"
+          datacenter: "{{ vm_data[0].datacenter }}"
+          use_instance_uuid: true
+          uuid: "{{ vm_data[0].instance_uuid }}"
+          snapshot_name: "{{ ansible_facts.hostname }}-prepatch"
+          state: absent
+      delegate_to: localhost
