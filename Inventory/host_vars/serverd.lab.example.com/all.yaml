@@ -1,0 +1,6 @@
+cse-groups: 
+  - webserver
+  - produzione
+  - reverse-proxy
+  - Pari2
+

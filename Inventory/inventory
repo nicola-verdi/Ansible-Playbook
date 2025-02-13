@@ -1,8 +1,8 @@
 all:
   children:
-    backend_server_pool:
+    reverse_proxy_internet_server_pool:
       hosts:
-        server[b:f].lab.example.com:
+        server[a:f].lab.example.com:
     lb_servers:
       hosts:
         servera.lab.example.com: {}
@@ -11,5 +11,3 @@ all:
       hosts:
         serverb.lab.example.com: {}
         serverc.lab.example.com: {}
-      vars:
-        alternate_server: serverd.lab.example.com
