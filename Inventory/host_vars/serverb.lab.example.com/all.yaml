@@ -1,4 +1,4 @@
-cse-groups: 
+cse_group:
   - webserver
   - produzione
   - reverse-proxy
