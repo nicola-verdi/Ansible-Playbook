@@ -1,0 +1,7 @@
+- name: ping server
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: geather facts
+      ansible.builtin.setup:
