@@ -4,3 +4,7 @@ cse_group:
   - reverse-proxy
   - Pari1
 
+cse_role: "reverse-proxy"
+cse_env: "produzione"
+cse_serial: "Pari1"
+
