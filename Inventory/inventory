@@ -11,3 +11,8 @@ all:
       hosts:
         serverb.lab.example.com: {}
         serverc.lab.example.com: {}
+    patching:
+      hosts:
+        client7.ocp.lab: { ansible_host: 172.20.29.153 }
+        cse-fluentd-destination.ocp.lab: { ansible_host: 172.20.29.195 }
+        cse-fluentd-source.ocp.lab: { ansible_host: 172.20.29.242 } 
