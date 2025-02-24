@@ -9,9 +9,16 @@
     vcenter_hostname: "{{ lookup('ansible.builtin.env', 'VMWARE_HOST', default=Undefined )  }}"
     vcenter_username: "{{ lookup('ansible.builtin.env', 'VMWARE_USER', default=Undefined )  }}"
     vcenter_password: "{{ lookup('ansible.builtin.env', 'VMWARE_PASSWORD', default=Undefined )  }}"
+    check_mode: "{{ test_mode | bool | default('true') }}"
 
 
   tasks:
+    - name:  Verify that a limit is set
+      when: ansible_limit is not defined
+      ansible.builtin.fail:
+        msg: "This playbook cannot be run with no limit"
+      run_once: true
+
     - name: Include vars
       ansible.builtin.include_vars:
         file: vars.yaml
