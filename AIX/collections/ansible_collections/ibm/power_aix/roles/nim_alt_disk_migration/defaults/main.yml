@@ -1,0 +1,40 @@
+---
+
+# determines to reboot the client LPAR after the
+# alt_disk is successfully created
+nim_alt_disk_migration_reboot_client: false
+
+nim_alt_disk_migration_target_disk_force: false
+
+# Debug flag to exit the playbook before calling nimadm to perform the migration.
+nim_alt_disk_migration_debug_skip_nimadm: false
+
+# required if perform_migration:  NIM client
+nim_alt_disk_migration_nim_client: ""
+
+# Control flags.
+# validate_resources: Will perform the validations of the nim_alt_disk_migration_lpp_source and nim_alt_disk_migration_spot
+#   It will also retrieve the AIX level from nim_alt_disk_migration_lpp_source.
+# perform_migration: a value of false will exit the playbook without performing the migration.
+#   This flag is used in conjuntion with validate_resources: true to use the role to
+#   only validate the resources and exit the playbook.
+nim_alt_disk_migration_control_phases:
+   validate_nim_resources: true
+   perform_migration: true
+
+# required: NIM nim_alt_disk_migration_lpp_source object name
+# associated to a nim_alt_disk_migration_lpp_source for the desired
+# level of migration
+nim_alt_disk_migration_lpp_source: ""
+
+# optional, provide a SPOT resource, if not given
+# then the role will derive one from nim_alt_disk_migration_lpp_source
+nim_alt_disk_migration_spot: ""
+
+# Stores nim_alt_disk_migration_lpp_source bos.mp64 level.
+nim_alt_disk_migration_lpp_source_fileset_level: ""
+# Idempotency check.
+nim_alt_disk_migration_no_need_to_migrate: false
+
+# By default normal migration will run and not parallel migration
+nim_alt_disk_migration_parallel_migration: false

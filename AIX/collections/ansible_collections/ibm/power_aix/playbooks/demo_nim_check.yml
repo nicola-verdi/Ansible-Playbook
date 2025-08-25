@@ -1,0 +1,13 @@
+---
+- name: NIM check on AIX playbook
+  hosts: nimserver
+  gather_facts: false
+
+  tasks:
+    - name: AIX NIM
+      nim:
+        action: check
+      register: result
+    - ansible.builtin.debug:
+        var: result
+        cmd: ""

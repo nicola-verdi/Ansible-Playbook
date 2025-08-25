@@ -1,0 +1,25 @@
+---
+# PREREQUISITES:
+
+- name: "Nim_master_migration demo"
+  hosts: "{{ hosts_val }}"
+  gather_facts: false
+  vars:
+    hosts_val: all
+    log_file: "/tmp/ansible_mpio_debug.log"
+  remote_user: root
+  tasks:
+    - ansible.builtin.import_role:
+        name: nim_master_migration
+      vars:
+        nim_master_migration_master_a: ansible-nim1
+        nim_master_migration_master_b: "p9zpa-ansible-test2"
+        nim_master_migration_alt_disk: "hdisk1"
+        nim_master_migration_db_filename: "db_backupfile"
+        nim_master_migration_lpp_source_v: "2317A_73D"
+        nim_master_migration_spot_v: "2317A_73D_spot"
+        nim_master_migration_nim_master_fileset_src: "~/bos.sysmgt"
+        nim_master_migration_nim_master_fileset_dest: "~/bos.sysmgt"
+        nim_master_migration_phase: db_restore
+        nim_master_migration_db_file_controller: "~/db_backupfile"
+        # nim_master_migration_phase: backup_and_migration

@@ -1,0 +1,24 @@
+---
+- name: Print the LVM related information
+  hosts: "{{ hosts_val }}"
+  gather_facts: true
+  vars:
+    hosts_val: all
+    log_file: /tmp/ansible_lvmfacts_debug.log
+
+  tasks:
+    - name: Gather all lvm facts
+      ibm.power_aix.lvm_facts:
+    - name: Gather VG facts
+      ibm.power_aix.lvm_facts:
+        name: all
+        component: vg
+    - name: Gather LV facts
+      ibm.power_aix.lvm_facts:
+        name: all
+        component: lv
+    - name: Update PV facts to existing LVM facts
+      ibm.power_aix.lvm_facts:
+        name: all
+        component: pv
+        lvm: "{{ ansible_facts.LVM }}"

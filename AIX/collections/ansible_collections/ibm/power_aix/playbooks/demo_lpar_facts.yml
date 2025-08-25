@@ -1,0 +1,14 @@
+---
+- name: "Print the LPAR related information"
+  hosts: "{{ hosts_val }}"
+  gather_facts: true
+  vars:
+    hosts_val: all
+    log_file: "/tmp/ansible_lpar_debug.log"
+
+  tasks:
+    - name: "LPAR information"
+      ibm.power_aix.lpar_facts:
+    - name: Print the LPAR related information
+      ansible.builtin.debug:
+        var: ansible_facts.lpar

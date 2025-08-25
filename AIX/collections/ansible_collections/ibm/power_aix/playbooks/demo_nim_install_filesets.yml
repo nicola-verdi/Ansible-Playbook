@@ -1,0 +1,26 @@
+---
+- name: NIM operations to create, delete or show NIM resource objects
+  hosts: all
+  gather_facts: false
+  vars:
+    lpp_source_v: 2343A_72Z
+    installp_bundle: installp_bundle_test1
+    filesets_location: /nim1/filesets/bos.loc.iso.mk_MK
+    nim_client_v: nimclient
+  tasks:
+    # Create an installp bundle with the fileset that needs to be installed
+    - name: Create an installp bundle for installing filesets
+      ibm.power_aix.nim_resource:
+        action: create
+        name: "{{ installp_bundle }}"
+        object_type: installp_bundle
+        attributes:
+          location: "{{ filesets_location }}"
+
+    # Install the fileset on the NIM client using the installp_bundle
+    - name: Install filesets on a NIM client
+      ibm.power_aix.nim:
+        action: install_fileset
+        targets: "{{ nim_client_v }}"
+        lpp_source: "{{ lpp_source_v }}"
+        installp_bundle: "{{ installp_bundle }}"

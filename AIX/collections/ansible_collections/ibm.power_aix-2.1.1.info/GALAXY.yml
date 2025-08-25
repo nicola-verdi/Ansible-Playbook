@@ -1,0 +1,8 @@
+download_url: https://galaxy.ansible.com/api/v3/plugin/ansible/content/published/collections/artifacts/ibm-power_aix-2.1.1.tar.gz
+format_version: 1.0.0
+name: power_aix
+namespace: ibm
+server: https://galaxy.ansible.com/api/
+signatures: []
+version: 2.1.1
+version_url: /api/v3/plugin/ansible/content/published/collections/index/ibm/power_aix/versions/2.1.1/

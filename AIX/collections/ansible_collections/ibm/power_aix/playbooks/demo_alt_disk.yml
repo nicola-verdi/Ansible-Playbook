@@ -1,0 +1,34 @@
+---
+- name: ALT_DISK on AIX
+  hosts: "{{host_name}}"
+  gather_facts: false
+  vars:
+    host_name: all
+    targets: hdisk1
+
+  tasks:
+    - name: Perform an alternate disk copy of the rootvg to hdisk1
+      ibm.power_aix.alt_disk:
+        action: copy
+        targets: hdisk1
+
+    - name: Perform an alternate disk copy of the rootvg to the nearest disk that can be selected
+      ibm.power_aix.alt_disk:
+        action: copy
+        disk_size_policy: nearest
+        allow_old_rootvg: true
+        force: true
+
+    - name: Perform an alternate disk copy of the rootvg to the smallest disk that can be selected
+      ibm.power_aix.alt_disk:
+        action: copy
+        disk_size_policy: minimize
+
+    - name: Perform a cleanup of any existing alternate disk copy
+      ibm.power_aix.alt_disk:
+        action: clean
+
+    - name: Perform a cleanup of any existing alternate disk copy and old rootvg
+      ibm.power_aix.alt_disk:
+        action: clean
+        allow_old_rootvg: true

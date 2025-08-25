@@ -1,0 +1,33 @@
+---
+- name: FLRTVC on AIX playbook
+  hosts: aix
+  gather_facts: false
+  vars:
+    apar: sec
+    path: /usr/sys/inst.images
+    check: false
+    download_only: true
+    extend: true
+    protocol_v: https
+    force_v: false
+    clean_v: false
+    verbose_v: true
+
+  tasks:
+    - name: FLRTVC
+      flrtvc:
+        path: "{{ path }}"
+        verbose: "{{ verbose_v }}"
+        apar: "{{ apar }}"
+        force: "{{ force_v }}"
+        clean: "{{ clean_v }}"
+        check_only: "{{ check }}"
+        download_only: "{{ download_only }}"
+        extend_fs: "{{ extend }}"
+        protocol: "{{ protocol_v }}"
+      environment:
+        PATH: /usr/bin:/usr/sbin/:/opt/freeware/bin
+      register: result
+    - ansible.builtin.debug:
+        var: result
+        verbosity: 4

@@ -1,0 +1,85 @@
+---
+- name: NIM operation on AIX/VIOS
+  hosts: nimserver2
+  remote_user: root
+  gather_facts: false
+  vars:
+    check_targets_v: standalone
+    install_targets_v: quimby06
+    update_lpp_v: latest_sp
+    bos_inst_resgroup_v: basic_res_grp
+    bos_inst_script_v: setup_root
+    master_setup_device_v: /dev/cd0
+    define_resource_v: setup_root
+    define_location_v: /export/nim/script_res/yum_install.sh
+    apply_script_v: setup_yum
+    alloc_resource_v: 7200-03-04-1938-lpp_source
+    rm_resource_v: quimby06_svg
+
+  tasks:
+    - name: Update a LPAR to the latest level available
+      ibm.power_aix.nim:
+        action: update
+        targets: "{{ install_targets_v }}"
+        lpp_source: "{{ update_lpp_v }}"
+        asynchronous: true
+        force: false
+      register: result
+    - ansible.builtin.debug:
+        var: result
+
+    - name: Deallocate a NIM resource
+      ibm.power_aix.nim:
+        action: deallocate
+        targets: "{{ install_targets_v }}"
+        lpp_source: "{{ alloc_resource_v }}"
+      register: result
+    - ansible.builtin.debug:
+        var: result
+
+    - name: Apply a customization script
+      ibm.power_aix.nim:
+        action: script
+        targets: "{{ install_targets_v }}"
+        script: "{{ apply_script_v }}"
+        asynchronous: true
+      register: result
+    - ansible.builtin.debug:
+        var: result
+
+    - name: Reset the current state of standalone partitions
+      ibm.power_aix.nim:
+        action: reset
+        targets: "{{ check_targets_v }}"
+        force: false
+      register: result
+    - ansible.builtin.debug:
+        var: result
+
+    - name: Reboot a partition
+      ibm.power_aix.nim:
+        action: reboot
+        targets: "{{ install_targets_v }}"
+      register: result
+    - ansible.builtin.debug:
+        var: result
+
+    - name: Perform a maintenance operation on standalone partition
+      ibm.power_aix.nim:
+        action: maintenance
+        targets: "{{ install_targets_v }}"
+      register: result
+    - ansible.builtin.debug:
+        var: result
+
+    - name: Query all standalone objects defined in a NIM master
+      ibm.power_aix.nim:
+        action: show
+        object_type: standalone
+      register: result
+    - ansible.builtin.debug:
+        var: result
+
+    - name: Get CState of '{{ install_targets_v }}'
+      ansible.builtin.debug:
+        var: result.meta.query[install_targets_v].Cstate

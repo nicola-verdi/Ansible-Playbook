@@ -1,0 +1,45 @@
+# Copyright (c) IBM Corporation 2020
+---
+- name: Fail if power_aix_bootstrap_pkgtype is defined as yum
+  ansible.builtin.fail:
+    msg: yum is not supported anymore, please try dnf
+  when:
+    - (power_aix_bootstrap_pkgtype == "yum")
+    - power_aix_bootstrap_download_dir is not defined
+
+- name: Fail if power_aix_bootstrap_pkgtype not specified
+  ansible.builtin.fail:
+    msg: power_aix_bootstrap_pkgtype not specified
+  when: not power_aix_bootstrap_pkgtype is defined
+
+- name: Fail if power_aix_bootstrap_download_dir not specified
+  ansible.builtin.fail:
+    msg: power_aix_bootstrap_download_dir not specified
+  when:
+    - (power_aix_bootstrap_pkgtype == "dnf")
+    - power_aix_bootstrap_download_dir is not defined
+
+- name: Fail if power_aix_bootstrap_target_dir not specified
+  ansible.builtin.fail:
+    msg: power_aix_bootstrap_target_dir not specified
+  when:
+    - (power_aix_bootstrap_pkgtype == "dnf")
+    - not power_aix_bootstrap_target_dir is defined
+
+- name: Fail if power_aix_bootstrap_rpm_src not specified
+  ansible.builtin.fail:
+    msg: power_aix_bootstrap_rpm_src not specified
+  when:
+    - (power_aix_bootstrap_pkgtype == "dnf")
+    - not power_aix_bootstrap_rpm_src is defined
+
+- name: Fail if dnf_src not specified
+  ansible.builtin.fail:
+    msg: power_aix_bootstrap_dnf_src_71_72 or power_aix_bootstrap_dnf_src_73 not specified
+  when:
+    - power_aix_bootstrap_pkgtype == "dnf"
+    - (power_aix_bootstrap_dnf_src_71_72 is not defined) or ( power_aix_bootstrap_dnf_src_73 is not defined)
+
+- name: Bootstrap dnf
+  ansible.builtin.include_tasks: dnf_install.yml
+  when: power_aix_bootstrap_pkgtype == "dnf"

@@ -1,0 +1,126 @@
+---
+argument_specs:
+  main:
+    short_description: >
+      This role is used to migrate single/multiple client OS levels from
+      AIX 7.1/7.2 to AIX 7.3.
+    author:
+      - Joseph de Joya
+      - Rae Yang
+      - Pedro V Torres
+    options:
+      nim_alt_disk_migration_nim_client:
+        type: str
+        required: false
+        description: >
+          Specifies a NIM object name that is associated to
+          the NIM client LPAR to be migrated.
+
+      nim_alt_disk_migration_target_disk:
+        type: dict
+        required: false
+        description: >
+          Specifies the physical volume or a disk size policy
+          used to automatically determine a valid physical volume
+          where the alternate disk will be created.
+        options:
+          disk_name:
+            type: str
+            description: >
+              Specifies the physical volume by name where the
+              alternate disk will be created.
+          disk_size_policy:
+            type: str
+            description: >
+              Specifies the disk size policy to automatically
+              determine a valid physical volume that fits the
+              policy where the alternate disk will be created.
+              If an alternate disk named 'altinst_rootvg' or
+              'old_rootvg' exists, the role will fail unless
+              I(nim_alt_disk_migration_target_disk.force=true) is used.
+            choices: [minimize, upper, lower, nearest]
+          force:
+            type: bool
+            description: >
+              If physical volume specified by I(nim_alt_disk_migration_target_disk.disk_name)
+              belongs to 'altinst_rootvg', 'old_rootvg', or a varied
+              on volume group then that physical volume will be
+              cleanedup. If I(nim_alt_disk_migration_target_disk.disk_size_policy) is specified
+              and an alternate disk named 'altinst_rootvg' or 'old_rootvg'
+              already exists, then it will clean up the physical volume
+              it occupies.
+            default: false
+
+      nim_alt_disk_migration_lpp_source:
+        type: str
+        required: false
+        description: >
+          Specifies a NIM object name associated to a LPP
+          resource for the desired level of migration.
+
+      nim_alt_disk_migration_spot:
+        type: str
+        required: false
+        description: >
+          Specifies a NIM object name associated to a SPOT
+          resource associated to the specified I(nim_alt_disk_migration_lpp_source).
+
+      nim_alt_disk_migration_nimadm_cache_vg:
+        type: str
+        required: false
+        description: >
+          Specifies the volume group(on the NIM master) on
+          which file systems are created and streams are used
+          to cache all of the data from the client to these file systems
+
+      nim_alt_disk_migration_nimadm_bundle:
+        type: str
+        required: false
+        description: >
+          Specifies the installp_bundle NIM resource.
+
+      nim_alt_disk_migration_nimadm_premig_script:
+        type: str
+        required: false
+        description: >
+          Specifies the pre-migration NIM script resource.
+
+      nim_alt_disk_migration_nimadm_postmig_script:
+        type: str
+        required: false
+        description: >
+          Specifies the post-migration NIM script resource.
+
+      nim_alt_disk_migration_nimadm_phases_to_run:
+        type: str
+        required: false
+        description: >
+          Specifies the phase to execute during the invocation of the nimadm command.
+
+      nim_alt_disk_migration_reboot_client:
+        type: bool
+        required: false
+        default: false
+        description: >
+          Specifies if the NIM client LPAR will be automatically
+          rebooted after successfully creating the alternate disk.
+
+      nim_alt_disk_migration_control_phases:
+        type: dict
+        required: false
+        description: >
+          Allows skipping or stopping at certain validations of
+          the nim_alt_disk_migration role.
+        options:
+          validate_nim_resources:
+            type: bool
+            description: >
+              If set to false, then it will skip validation of
+              NIM resources.
+            default: true
+          perform_migration:
+            type: bool
+            description: >
+              If set to false, then it will skip the actual
+              migration task.
+            default: true

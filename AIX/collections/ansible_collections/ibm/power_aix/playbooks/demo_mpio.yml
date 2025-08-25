@@ -1,0 +1,25 @@
+---
+- name: Print the mpio related information
+  hosts: "{{ hosts_val }}"
+  gather_facts: true
+  vars:
+    hosts_val: all
+    log_file: /tmp/ansible_mpio_debug.log
+
+  tasks:
+    - name: Gather the mpio info
+      ibm.power_aix.mpio:
+      register: mpio_info
+
+    - name: Print the paths
+      ansible.builtin.debug:
+        var: mpio_info.mpio_facts.paths
+
+    - name: Gather specific device  mpio info
+      ibm.power_aix.mpio:
+        device: hdisk0
+
+    - name: Gather mpio information when device and parent is provided
+      ibm.power_aix.mpio:
+        device: hdisk1
+        parent: vscsi0

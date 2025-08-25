@@ -1,0 +1,10 @@
+---
+- name: Vios-health-checker on NIM master
+  hosts: nimmaster
+  gather_facts: false
+
+  tasks:
+# Install/Update vios health checker on NIM master.
+    - name: Install the vioshc on NIM master
+      ansible.builtin.import_role:
+        name: power_aix_vioshc

@@ -1,0 +1,13 @@
+pycodestyle
+pylint
+six
+voluptuous
+yamllint
+flake8
+ansible-lint
+rich
+shellcheck-py
+changelog
+ignores
+pep8
+shebang

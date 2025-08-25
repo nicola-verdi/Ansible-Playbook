@@ -1,0 +1,144 @@
+- name: install ifix on AIX server
+  hosts: all
+  gather_facts: false
+  become: true
+  become_method: sudo
+  collections:
+    - name: ibm.power_aix
+      version: v2.1.1 
+  
+    
+  vars:
+    - staging_dir: "/tmp/ifix_staging/"
+    - repository_url: "https://.../"
+    - ifix_file: "{{ ifix | default('fail.html', true )}}"   # survey must pass "ifix" variable
+    - ifix_reinstall: "{{ reinstall | default(False) }}"   # survey must pass "reinstall" variable 
+    - automatic_reboot: "{{ reboot | default(False}}"      # survey must pass "reboot" variable 
+
+
+  tasks:
+   - name: Fail if ifix  is not provided
+     when: ifix_file is 'fail.html'
+     ansible.builtin.fail:
+       msg: ifix file not provided
+
+
+   - name: ensure temporary dir exist
+     ansible.builtin.file:
+       path: "{{ staging_dir }}"
+       state: directory
+       mode: 755
+       
+
+   - name: download ifix
+     ansible.builtin.copy:
+       src: "{{ repository_url }}/{{ ifix_file }}"
+       dest: "{{ staging_dir }}" 
+     tags:
+       - never
+
+   - name: check if ifix is already installed
+     ibm.power_aix.emgr:
+        action: list
+     register: ifix_list_output
+
+   - name: Debug
+     ansible.builtin.debug:
+       var: ifix_list_output
+       verbosity: 1
+         
+
+   - name: exit if ifix already installed
+     vars:
+       - ifix_tokens: "{{ ifix_file | split('.') }}"
+     when: 
+       - ifix_tokens[0] in ifix_list_output.stdout   
+       - ifix_reinstall == False
+     ansible.builtin.fail:
+       msg: iFix already installed
+
+   - name: Preview Install ifix to check if there is conflicting ifix
+     ibm.power_aix.emgr:
+        action: install
+        commit: True
+        from_epkg: True
+        ifix_package: "{{ staging_dir }}/{{ ifix_file }}"
+        working_dir: "{{ staging_dir }}"
+        preview: true
+     register: ifix_install_preview 
+
+   - name: Extract ifix to remove from output
+     ansible.builtin.debug:
+       var: ifix_install_preview
+       verbosity: 1
+
+   - name: Remove conflicting ifix
+     var: 
+       conflicting_ifix: "{{ ifix_install_preview.msg | ... }}"  ### To complete
+     ibm.power_aix.emgr:
+        action: remove
+        ifix_label: "{{ conflicting_ifix | .... }}"  ### To complete
+     register: ifix_remove_conflicting
+
+   - name: reboot if required
+     when: 
+       - ifix_remove_conflicting.reboot_required == True
+       - automatic_reboot == True
+     ibm.power_aix.reboot:
+       pre_reboot_delay: 20
+       post_reboot_delay: 20
+       connect_timeout: 10
+       reboot_timeout: 300
+
+   - name: Fail becouse reboot is required to continue
+     when: 
+       - ifix_remove_conflicting.reboot_required == True
+       - automatic_reboot == False
+     ansible.builtin.fail:
+       msg: Please relaunch the playbook after the reboot of the server
+
+   - name: Install ifix 
+     ibm.power_aix.emgr:
+        action: install
+        commit: True
+        from_epkg: True
+        ifix_package: "{{ staging_dir }}/{{ ifix_file }}"
+        working_dir: "{{ staging_dir }}"
+        preview: false
+        #extend_fs: true
+     register: ifix_install
+
+   - name: Extract ifix to remove from output
+     ansible.builtin.debug:
+       var: ifix_install
+       verbosity: 1
+
+   - name:  reboot if required
+     when: 
+       - ifix_install.reboot_required == True
+       - automatic_reboot == True
+     ibm.power_aix.reboot:
+       pre_reboot_delay: 20
+       post_reboot_delay: 20
+       connect_timeout: 10
+       reboot_timeout: 300
+
+
+   - name: check if ifix is installed
+     when:
+       - automatic_reboot == True
+     vars:
+       - ifix_tokens: "{{ ifix_file | split('.') }}"
+     ibm.power_aix.emgr:
+        action: list
+        ifix_label: "{{ ifix_tokens[0] }}"
+
+
+   - name: Fail becouse reboot is required to continue
+     when: 
+       - ifix_install.reboot_required == True
+       - automatic_reboot == False
+     ansible.builtin.fail:
+       msg: Please reboot of the server to complete the installation
+    
+

@@ -1,0 +1,44 @@
+{
+ "collection_info": {
+  "namespace": "ibm",
+  "name": "power_aix",
+  "version": "2.1.1",
+  "authors": [
+   "Paul B. Finley (@pbfinley1911)",
+   "Pedro Torres (@pvtorres)",
+   "Nitish Mishra (@nitismis)",
+   "Joseph de Joya (@jdejoya17)",
+   "Rae Yang (@raeyacld)",
+   "Gomathi Mohan (@MGomathi)",
+   "Shreyansh Chamola (@schamola)",
+   "Syahrul Aiman Shaharuddin (@syahrul-aiman)",
+   "Vivek Pandey (@vivekpandeyibm)",
+   "Oliver Stadler (@staoli)"
+  ],
+  "readme": "README.md",
+  "tags": [
+   "infrastructure",
+   "ibm",
+   "power",
+   "aix"
+  ],
+  "description": "Ansible Content for IBM Power Systems - AIX provides a collection of content used to manage and deploy Power Systems AIX.",
+  "license": [
+   "GPL-3.0-only"
+  ],
+  "license_file": null,
+  "dependencies": {},
+  "repository": "https://github.com/IBM/ansible-power-aix",
+  "documentation": "https://ibm.github.io/ansible-power-aix/index.html",
+  "homepage": "https://github.com/IBM",
+  "issues": "https://github.com/IBM/ansible-power-aix/issues"
+ },
+ "file_manifest_file": {
+  "name": "FILES.json",
+  "ftype": "file",
+  "chksum_type": "sha256",
+  "chksum_sha256": "6cfc653390fec742505978008ba7dabc28ebef70e1f79d7804580bc781bbb5b6",
+  "format": 1
+ },
+ "format": 1
+}

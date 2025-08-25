@@ -1,0 +1,25 @@
+---
+- name: "VIOS health check information"
+  gather_facts: true
+  hosts: nimserver
+
+  vars:
+  # VIOSes to do health check.
+    targets_v:
+      - "vios1,vios2"
+      - "vios3"
+
+  tasks:
+    - name: Install the vios health assessment tool on NIM
+      ansible.builtin.import_role:
+        name: power_aix_vioshc
+
+    - name: Gather the health check information
+      register: result
+      ibm.power_aix.nim_vios_hc:
+        targets: "{{ targets_v }}"
+        action: health_check
+
+    - name: Print the health check output
+      ansible.builtin.debug:
+        var: result
