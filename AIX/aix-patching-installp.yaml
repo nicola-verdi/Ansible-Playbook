@@ -1,0 +1,104 @@
+- name: install package on AIX server
+  hosts: all
+  gather_facts: true
+  become: true
+  become_method: sudo
+  serial: 1
+  collections:  ibm.power_aix
+  
+    
+  vars:
+    - staging_dir: "/tmp/package_staging/"
+    - patch_level: "{{ patch_date | default('no_date', true) }}"  
+    - repository_server: "server8.server.csebo.it"
+    - repository_base_path: "/srv/.../installp/{{patch_level}}"           # path di dove si trovano i pacchetit sul filesystem del server repository
+    - repository_base_url: "https://.../installp/{{ patch_level }} "
+    - package_file: "{{ package | default('fail.html', true )}}"   # survey must pass "package" variable
+    - package_reinstall: "{{ reinstall | default(False) }}"   # survey must pass "reinstall" variable 
+    - automatic_reboot: "{{ reboot | default(False}}"      # survey must pass "reboot" variable 
+
+
+  tasks:
+   - name: Fail if  patch_date is not provided
+     when: patch_level is 'no_date'
+     ansible.builtin.fail:
+       msg: patch_date not provided
+
+   - name: Fail if package  is not provided
+     when: package_file is 'fail.html'
+     ansible.builtin.fail:
+       msg: package file not provided
+
+   # per semplificare la gestione vado a recuperare la lista dei file direttamente sul repository
+   - name: List package tar.Z in the directory of the repository
+     ansible.builtin.find:
+       paths: "{{ repository_path }}/{{distribution_version}}/"
+       recurse: false
+       file_type: "file"
+       pattern: "^.*\\.tar\\.Z$"
+       use_regexp: true
+     delegate_to: repository_server 
+     register: compressed_packages 
+     
+   - name: List package not compressed in the directory of the repository
+     ansible.builtin.find:
+       paths:  "{{ repository_path }}/{{distribution_version}}/"
+       recurse: false
+       file_type: "file"
+       pattern: "!^.*\\.tar\\.Z$"
+       use_regexp: true
+     delegate_to: repository_server 
+     register: simple_packages 
+
+   # Elimino la directory temporanea per pulirne il contenuto
+   - name: ensure temporary dir exist
+     ansible.builtin.file:
+       path: "{{ staging_dir }}"
+       state: absent
+
+   # Mi assicuro che esista la directory temporanea sul server 
+   - name: ensure temporary dir exist
+     ansible.builtin.file:
+       path: "{{ staging_dir }}"
+       state: directory
+       mode: 755
+
+
+   # recupero tutti i file trovati nella directory del repository
+   - name: download package
+     ansible.builtin.get_url:
+       url: "{{ repository_url }}/{{ item.path | relpath({{repository_base_path}}) }}"
+       dest: "{{ staging_dir }}" 
+     loop: 
+       - simple_packages.files
+       - compressed_packages.files 
+
+   - name: uncompress files 
+     ansible.builtin.command: 
+       chdir: "{{ staging_dir }}"
+       cmd: "zcat {{ item | basename }} | tar -xvf - " 
+     loop: 
+       - compressed_packages.files
+
+   - name: remove compressed files aleady exploded 
+     ansible.builtin.command: 
+       chdir: "{{ staging_dir }}"
+       cmd: " rm -f *.tar.Z " 
+
+   - name: Install all packages
+     ibm.power_aix.geninstall:
+        action: install
+        agree_licenses: true
+        install_list: all
+        device: "{{ staging_dir }}"
+
+
+#   - name: Fail because reboot is required to continue
+#     when: 
+#       - package_remove_conflicting.reboot_required == True
+#       - automatic_reboot == False
+#     ansible.builtin.fail:
+#       msg: Please relaunch the playbook after the reboot of the server
+
+    
+
